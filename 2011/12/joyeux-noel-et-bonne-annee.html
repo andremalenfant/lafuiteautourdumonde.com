@@ -1133,6 +1133,210 @@ Mais après plus d'une centaine de jours dans l'aventure (wow!), nous sommes vra
 </ItemPage>
 </div>
 <div id='disqus_thread' style='margin-top: 20px;'></div>
+<div class='comments' id='comments'>
+<a name='comments'></a>
+<h4>16&#160;commentaires:</h4>
+<div class='comments-content'>
+<script async='async' src='joyeux-noel-et-bonne-annee.html' type='text/javascript'></script>
+<script type='text/javascript'>
+    (function() {
+      var items = null;
+      var msgs = null;
+      var config = {};
+
+// <![CDATA[
+      var cursor = null;
+      if (items && items.length > 0) {
+        cursor = parseInt(items[items.length - 1].timestamp) + 1;
+      }
+
+      var bodyFromEntry = function(entry) {
+        var text = (entry &&
+                    ((entry.content && entry.content.$t) ||
+                     (entry.summary && entry.summary.$t))) ||
+            '';
+        if (entry && entry.gd$extendedProperty) {
+          for (var k in entry.gd$extendedProperty) {
+            if (entry.gd$extendedProperty[k].name == 'blogger.contentRemoved') {
+              return '<span class="deleted-comment">' + text + '</span>';
+            }
+          }
+        }
+        return text;
+      }
+
+      var parse = function(data) {
+        cursor = null;
+        var comments = [];
+        if (data && data.feed && data.feed.entry) {
+          for (var i = 0, entry; entry = data.feed.entry[i]; i++) {
+            var comment = {};
+            // comment ID, parsed out of the original id format
+            var id = /blog-(\d+).post-(\d+)/.exec(entry.id.$t);
+            comment.id = id ? id[2] : null;
+            comment.body = bodyFromEntry(entry);
+            comment.timestamp = Date.parse(entry.published.$t) + '';
+            if (entry.author && entry.author.constructor === Array) {
+              var auth = entry.author[0];
+              if (auth) {
+                comment.author = {
+                  name: (auth.name ? auth.name.$t : undefined),
+                  profileUrl: (auth.uri ? auth.uri.$t : undefined),
+                  avatarUrl: (auth.gd$image ? auth.gd$image.src : undefined)
+                };
+              }
+            }
+            if (entry.link) {
+              if (entry.link[2]) {
+                comment.link = comment.permalink = entry.link[2].href;
+              }
+              if (entry.link[3]) {
+                var pid = /.*comments\/default\/(\d+)\?.*/.exec(entry.link[3].href);
+                if (pid && pid[1]) {
+                  comment.parentId = pid[1];
+                }
+              }
+            }
+            comment.deleteclass = 'item-control blog-admin';
+            if (entry.gd$extendedProperty) {
+              for (var k in entry.gd$extendedProperty) {
+                if (entry.gd$extendedProperty[k].name == 'blogger.itemClass') {
+                  comment.deleteclass += ' ' + entry.gd$extendedProperty[k].value;
+                } else if (entry.gd$extendedProperty[k].name == 'blogger.displayTime') {
+                  comment.displayTime = entry.gd$extendedProperty[k].value;
+                }
+              }
+            }
+            comments.push(comment);
+          }
+        }
+        return comments;
+      };
+
+      var paginator = function(callback) {
+        if (hasMore()) {
+          var url = config.feed + '?alt=json&v=2&orderby=published&reverse=false&max-results=50';
+          if (cursor) {
+            url += '&published-min=' + new Date(cursor).toISOString();
+          }
+          window.bloggercomments = function(data) {
+            var parsed = parse(data);
+            cursor = parsed.length < 50 ? null
+                : parseInt(parsed[parsed.length - 1].timestamp) + 1
+            callback(parsed);
+            window.bloggercomments = null;
+          }
+          url += '&callback=bloggercomments';
+          var script = document.createElement('script');
+          script.type = 'text/javascript';
+          script.src = url;
+          document.getElementsByTagName('head')[0].appendChild(script);
+        }
+      };
+      var hasMore = function() {
+        return !!cursor;
+      };
+      var getMeta = function(key, comment) {
+        if ('iswriter' == key) {
+          var matches = !!comment.author
+              && comment.author.name == config.authorName
+              && comment.author.profileUrl == config.authorUrl;
+          return matches ? 'true' : '';
+        } else if ('deletelink' == key) {
+          return config.baseUri + '/comment/delete/'
+               + config.blogId + '/' + comment.id;
+        } else if ('deleteclass' == key) {
+          return comment.deleteclass;
+        }
+        return '';
+      };
+
+      var replybox = null;
+      var replyUrlParts = null;
+      var replyParent = undefined;
+
+      var onReply = function(commentId, domId) {
+        if (replybox == null) {
+          // lazily cache replybox, and adjust to suit this style:
+          replybox = document.getElementById('comment-editor');
+          if (replybox != null) {
+            replybox.height = '250px';
+            replybox.style.display = 'block';
+            replyUrlParts = replybox.src.split('#');
+          }
+        }
+        if (replybox && (commentId !== replyParent)) {
+          replybox.src = '';
+          document.getElementById(domId).insertBefore(replybox, null);
+          replybox.src = replyUrlParts[0]
+              + (commentId ? '&parentID=' + commentId : '')
+              + '#' + replyUrlParts[1];
+          replyParent = commentId;
+        }
+      };
+
+      var hash = (window.location.hash || '#').substring(1);
+      var startThread, targetComment;
+      if (/^comment-form_/.test(hash)) {
+        startThread = hash.substring('comment-form_'.length);
+      } else if (/^c[0-9]+$/.test(hash)) {
+        targetComment = hash.substring(1);
+      }
+
+      // Configure commenting API:
+      var configJso = {
+        'maxDepth': config.maxThreadDepth
+      };
+      var provider = {
+        'id': config.postId,
+        'data': items,
+        'loadNext': paginator,
+        'hasMore': hasMore,
+        'getMeta': getMeta,
+        'onReply': onReply,
+        'rendered': true,
+        'initComment': targetComment,
+        'initReplyThread': startThread,
+        'config': configJso,
+        'messages': msgs
+      };
+
+      var render = function() {
+        if (window.goog && window.goog.comments) {
+          var holder = document.getElementById('comment-holder');
+          window.goog.comments.render(holder, provider);
+        }
+      };
+
+      // render now, or queue to render when library loads:
+      if (window.goog && window.goog.comments) {
+        render();
+      } else {
+        window.goog = window.goog || {};
+        window.goog.comments = window.goog.comments || {};
+        window.goog.comments.loadQueue = window.goog.comments.loadQueue || [];
+        window.goog.comments.loadQueue.push(render);
+      }
+    })();
+// ]]>
+  </script>
+<div id='comment-holder'>
+<div class="comment-thread toplevel-thread"><ol id="top-ra"><li class="comment" id="c8516170684017879773"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Luc</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="joyeux-noel-et-bonne-annee.html%3FshowComment=1324925262487.html#c8516170684017879773">26 décembre 2011 à 13 h 47</a></span></div><p class="comment-content">Bonjour  à vous deux.<br><br>Merci pour vous voeux et merci de partager vos aventures et expériences avec nous. C&#39;est toujours un plaisir immense de vous lire<br><br>Mes meilleures voeux a vous deux pour 2012.<br><br>Grosses bises<br><br>Luc</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="8516170684017879773">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/8516170684017879773">Effacer</a></span></span></div><div class="comment-replies"><div id="c8516170684017879773-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c8516170684017879773-ra" class="thread-chrome thread-expanded"><div></div><div id="c8516170684017879773-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="8516170684017879773">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c8516170684017879773-ce"></div></li><li class="comment" id="c1248474179209838448"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">josette.clement</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="joyeux-noel-et-bonne-annee.html%3FshowComment=1325125480453.html#c1248474179209838448">28 décembre 2011 à 21 h 24</a></span></div><p class="comment-content">Bonne Année 2012 à vous deux,<br><br>Nous vous souhaitons que votre belle aventure continue aussi longtemps que vous le souhaitez et toujours plus de bonheur dans la poursuite de votre rêve. C&#39;est toujours un bonheur de vous lire.  On vous aime beaucoup.  On vous embrasse.<br><br>Josette et Clément</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="1248474179209838448">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/1248474179209838448">Effacer</a></span></span></div><div class="comment-replies"><div id="c1248474179209838448-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c1248474179209838448-ra" class="thread-chrome thread-expanded"><div></div><div id="c1248474179209838448-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="1248474179209838448">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c1248474179209838448-ce"></div></li><li class="comment" id="c7143658269406464814"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user"><a href="http://www.facebook.com/profile.php%3Fid%3D1361796866" rel="nofollow">Johane Tremblay</a></cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="joyeux-noel-et-bonne-annee.html%3FshowComment=1325293919826.html#c7143658269406464814">30 décembre 2011 à 20 h 11</a></span></div><p class="comment-content">Bonne année 2012  à vous deux  et à vos rêves qui sont aussi nos rêves.  Merci de nous les faire vivre et de nous faire vibrer. J&#39;aime vous lire et même  réfléchir avec vous, à distance. C&#39;est assez spécial. Merci d&#39;être là, d&#39;être ici avec nous tout en étant  là-bas en même temps. Oui , le temps, l&#39;éloignement, l&#39;espace, et notre présence mutuelle et nos échanges.<br><br>Je vous souhaite la santé, la paix et la joie!<br>Je vous embrasse<br>Johane XXX</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="7143658269406464814">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/7143658269406464814">Effacer</a></span></span></div><div class="comment-replies"><div id="c7143658269406464814-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c7143658269406464814-ra" class="thread-chrome thread-expanded"><div></div><div id="c7143658269406464814-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="7143658269406464814">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c7143658269406464814-ce"></div></li><li class="comment" id="c3138896777286260139"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Marilène Laprise</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="joyeux-noel-et-bonne-annee.html%3FshowComment=1325379120984.html#c3138896777286260139">31 décembre 2011 à 19 h 52</a></span></div><p class="comment-content">On aime ces mots: Réaliser un rêve... le temps... découvertes... créativité ... Tout ce qui rend la vie belle !<br>Si chacun des pays que vous visitez vous fait cadeau de belles inspirations, vous aurez acquis pendant votre séjour un trésor inestimable!<br><br>Que 2012 vous apporte plein de beaux moments d&#39;émerveillement, de belles surprises et de grandes joies.<br>On vous embrasse bien fort !</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="3138896777286260139">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/3138896777286260139">Effacer</a></span></span></div><div class="comment-replies"><div id="c3138896777286260139-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c3138896777286260139-ra" class="thread-chrome thread-expanded"><div></div><div id="c3138896777286260139-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="3138896777286260139">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c3138896777286260139-ce"></div></li><li class="comment" id="c7571901649653217747"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Katy</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="joyeux-noel-et-bonne-annee.html%3FshowComment=1325495310939.html#c7571901649653217747">2 janvier 2012 à 04 h 08</a></span></div><p class="comment-content">Bonne année et surtout une bonne santé  ainsi que du soleil et tout le bonheur du monde !!!!!!!!</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="7571901649653217747">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/7571901649653217747">Effacer</a></span></span></div><div class="comment-replies"><div id="c7571901649653217747-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c7571901649653217747-ra" class="thread-chrome thread-expanded"><div></div><div id="c7571901649653217747-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="7571901649653217747">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c7571901649653217747-ce"></div></li><li class="comment" id="c8951546207536768807"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Francois_M</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="joyeux-noel-et-bonne-annee.html%3FshowComment=1325690848351.html#c8951546207536768807">4 janvier 2012 à 10 h 27</a></span></div><p class="comment-content">Marie-Claude et André!  Avec un peu de retard, je vous souhaite une bonne année 2012 en espérant que vous puissiez continuer vos découvertes du monde!  C&#39;est toujours un grand plaisir de vous lire régulièrement et de vous suivre dans votre pérégrinations!  Je vous souhaite également santé, bonheur et surtout beaucoup d&#39;inspiration dans vos récits de voyage!  Bonne continuation!  Gros becs gelés (y fa frette en tabarouette!!!).</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="8951546207536768807">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/8951546207536768807">Effacer</a></span></span></div><div class="comment-replies"><div id="c8951546207536768807-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c8951546207536768807-ra" class="thread-chrome thread-expanded"><div></div><div id="c8951546207536768807-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="8951546207536768807">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c8951546207536768807-ce"></div></li><li class="comment" id="c2076539916245085996"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Eileen_roy</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="joyeux-noel-et-bonne-annee.html%3FshowComment=1325694662650.html#c2076539916245085996">4 janvier 2012 à 11 h 31</a></span></div><p class="comment-content">Une très bonne et heureuse année 2012 a vous deux, remplie de belles découvertes.<br>Au plaisir de vous lire,<br>Bisous,<br>Eileen</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="2076539916245085996">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/2076539916245085996">Effacer</a></span></span></div><div class="comment-replies"><div id="c2076539916245085996-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c2076539916245085996-ra" class="thread-chrome thread-expanded"><div></div><div id="c2076539916245085996-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="2076539916245085996">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c2076539916245085996-ce"></div></li><li class="comment" id="c7210768706643489309"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">André Malenfant</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="joyeux-noel-et-bonne-annee.html%3FshowComment=1325781546859.html#c7210768706643489309">5 janvier 2012 à 11 h 39</a></span></div><p class="comment-content">Merci Luc! Bonne année à toi aussi!</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="7210768706643489309">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/7210768706643489309">Effacer</a></span></span></div><div class="comment-replies"><div id="c7210768706643489309-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c7210768706643489309-ra" class="thread-chrome thread-expanded"><div></div><div id="c7210768706643489309-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="7210768706643489309">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c7210768706643489309-ce"></div></li><li class="comment" id="c2763786805992384908"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">André Malenfant</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="joyeux-noel-et-bonne-annee.html%3FshowComment=1325781582995.html#c2763786805992384908">5 janvier 2012 à 11 h 39</a></span></div><p class="comment-content">Bonne année Eileen, merci de nous lire!</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="2763786805992384908">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/2763786805992384908">Effacer</a></span></span></div><div class="comment-replies"><div id="c2763786805992384908-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c2763786805992384908-ra" class="thread-chrome thread-expanded"><div></div><div id="c2763786805992384908-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="2763786805992384908">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c2763786805992384908-ce"></div></li><li class="comment" id="c5718388035164511621"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">André Malenfant</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="joyeux-noel-et-bonne-annee.html%3FshowComment=1325781644971.html#c5718388035164511621">5 janvier 2012 à 11 h 40</a></span></div><p class="comment-content">Bonne année François! Oublies pas Rio en 2013!</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="5718388035164511621">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/5718388035164511621">Effacer</a></span></span></div><div class="comment-replies"><div id="c5718388035164511621-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c5718388035164511621-ra" class="thread-chrome thread-expanded"><div></div><div id="c5718388035164511621-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="5718388035164511621">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c5718388035164511621-ce"></div></li><li class="comment" id="c1402698697978712167"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">André Malenfant</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="joyeux-noel-et-bonne-annee.html%3FshowComment=1325781776728.html#c1402698697978712167">5 janvier 2012 à 11 h 42</a></span></div><p class="comment-content">Bonne année Katy! On se croisera peut-être en 2012? Vietnam?</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="1402698697978712167">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/1402698697978712167">Effacer</a></span></span></div><div class="comment-replies"><div id="c1402698697978712167-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c1402698697978712167-ra" class="thread-chrome thread-expanded"><div></div><div id="c1402698697978712167-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="1402698697978712167">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c1402698697978712167-ce"></div></li><li class="comment" id="c3012895012889729364"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">André Malenfant</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="joyeux-noel-et-bonne-annee.html%3FshowComment=1325782119184.html#c3012895012889729364">5 janvier 2012 à 11 h 48</a></span></div><p class="comment-content">Bonne année à vous aussi! Un petit cadeau du jour de l&#39;an en souvenir du temps au Maroc ensemble:</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="3012895012889729364">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/3012895012889729364">Effacer</a></span></span></div><div class="comment-replies"><div id="c3012895012889729364-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c3012895012889729364-ra" class="thread-chrome thread-expanded"><div></div><div id="c3012895012889729364-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="3012895012889729364">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c3012895012889729364-ce"></div></li><li class="comment" id="c1613284376034543193"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">André Malenfant</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="joyeux-noel-et-bonne-annee.html%3FshowComment=1325782251311.html#c1613284376034543193">5 janvier 2012 à 11 h 50</a></span></div><p class="comment-content">Bonne année à vous aussi! Un petit cadeau du jour de l&#39;an en souvenir du temps au Maroc ensemble:</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="1613284376034543193">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/1613284376034543193">Effacer</a></span></span></div><div class="comment-replies"><div id="c1613284376034543193-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c1613284376034543193-ra" class="thread-chrome thread-expanded"><div></div><div id="c1613284376034543193-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="1613284376034543193">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c1613284376034543193-ce"></div></li><li class="comment" id="c6370895982877733045"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">André Malenfant</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="joyeux-noel-et-bonne-annee.html%3FshowComment=1325782331183.html#c6370895982877733045">5 janvier 2012 à 11 h 52</a></span></div><p class="comment-content">Bonne année Johane et merci de nous lire!</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="6370895982877733045">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/6370895982877733045">Effacer</a></span></span></div><div class="comment-replies"><div id="c6370895982877733045-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c6370895982877733045-ra" class="thread-chrome thread-expanded"><div></div><div id="c6370895982877733045-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="6370895982877733045">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c6370895982877733045-ce"></div></li><li class="comment" id="c3600204419010311223"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">André Malenfant</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="joyeux-noel-et-bonne-annee.html%3FshowComment=1325782412563.html#c3600204419010311223">5 janvier 2012 à 11 h 53</a></span></div><p class="comment-content">Merci Maman, merci Clément! Bonne année à vous deux et pensez à un endroit dans le monde où on pourrait se retrouver en 2012!</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="3600204419010311223">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/3600204419010311223">Effacer</a></span></span></div><div class="comment-replies"><div id="c3600204419010311223-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c3600204419010311223-ra" class="thread-chrome thread-expanded"><div></div><div id="c3600204419010311223-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="3600204419010311223">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c3600204419010311223-ce"></div></li><li class="comment" id="c247428095919081892"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Pascal</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="joyeux-noel-et-bonne-annee.html%3FshowComment=1327688016553.html#c247428095919081892">27 janvier 2012 à 13 h 13</a></span></div><p class="comment-content">Bonjour André et Marie-Claude,<br><br>Avec plusieurs semaine de retard, je vous souhaite une bonne et heureuse année 2012. Content de lire que votre périple se passe bien, et que l&#39;expérience est à la hauteur de vos attentes !<br><br>Amitiés</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="247428095919081892">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/247428095919081892">Effacer</a></span></span></div><div class="comment-replies"><div id="c247428095919081892-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c247428095919081892-ra" class="thread-chrome thread-expanded"><div></div><div id="c247428095919081892-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="247428095919081892">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c247428095919081892-ce"></div></li></ol><div id="top-continue" class="continue"><a class="comment-reply" target="_self">Ajouter un commentaire</a></div><div class="comment-replybox-thread" id="top-ce"></div><div class="loadmore hidden" data-post-id="1483524393455590231"><a target="_self">Charger la suite...</a></div></div>
+</div>
+</div>
+<p class='comment-footer'>
+<div class='comment-form'>
+<a name='comment-form'></a>
+<p>
+</p>
+<a href='https://www.blogger.com/comment/frame/2960778330733091697?po=1483524393455590231&hl=fr-CA&saa=85391&origin=http://www.lafuiteautourdumonde.com' id='comment-editor-src'></a>
+<iframe allowtransparency='true' class='blogger-iframe-colorize blogger-comment-from-post' frameborder='0' height='410px' id='comment-editor' name='comment-editor' src='joyeux-noel-et-bonne-annee.html' width='100%'></iframe>
+<script src='https://www.blogger.com/static/v1/jsbin/1167892209-comment_from_post_iframe.js' type='text/javascript'></script>
+<script type='text/javascript'>
+      BLOG_CMT_createIframe('https://www.blogger.com/rpc_relay.html');
+    </script>
+</div>
+</p>
 <div id='backlinks-container'>
 <div id='Blog1_backlinks-container'>
 </div>
