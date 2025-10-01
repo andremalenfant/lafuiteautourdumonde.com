@@ -1203,6 +1203,210 @@ Marie-Claude, de son côté, apprend à vivre au présent, chose difficile quand
 </ItemPage>
 </div>
 <div id='disqus_thread' style='margin-top: 20px;'></div>
+<div class='comments' id='comments'>
+<a name='comments'></a>
+<h4>12&#160;commentaires:</h4>
+<div class='comments-content'>
+<script async='async' src='une-annee-rocambolesque-ebouriffante-et.html' type='text/javascript'></script>
+<script type='text/javascript'>
+    (function() {
+      var items = null;
+      var msgs = null;
+      var config = {};
+
+// <![CDATA[
+      var cursor = null;
+      if (items && items.length > 0) {
+        cursor = parseInt(items[items.length - 1].timestamp) + 1;
+      }
+
+      var bodyFromEntry = function(entry) {
+        var text = (entry &&
+                    ((entry.content && entry.content.$t) ||
+                     (entry.summary && entry.summary.$t))) ||
+            '';
+        if (entry && entry.gd$extendedProperty) {
+          for (var k in entry.gd$extendedProperty) {
+            if (entry.gd$extendedProperty[k].name == 'blogger.contentRemoved') {
+              return '<span class="deleted-comment">' + text + '</span>';
+            }
+          }
+        }
+        return text;
+      }
+
+      var parse = function(data) {
+        cursor = null;
+        var comments = [];
+        if (data && data.feed && data.feed.entry) {
+          for (var i = 0, entry; entry = data.feed.entry[i]; i++) {
+            var comment = {};
+            // comment ID, parsed out of the original id format
+            var id = /blog-(\d+).post-(\d+)/.exec(entry.id.$t);
+            comment.id = id ? id[2] : null;
+            comment.body = bodyFromEntry(entry);
+            comment.timestamp = Date.parse(entry.published.$t) + '';
+            if (entry.author && entry.author.constructor === Array) {
+              var auth = entry.author[0];
+              if (auth) {
+                comment.author = {
+                  name: (auth.name ? auth.name.$t : undefined),
+                  profileUrl: (auth.uri ? auth.uri.$t : undefined),
+                  avatarUrl: (auth.gd$image ? auth.gd$image.src : undefined)
+                };
+              }
+            }
+            if (entry.link) {
+              if (entry.link[2]) {
+                comment.link = comment.permalink = entry.link[2].href;
+              }
+              if (entry.link[3]) {
+                var pid = /.*comments\/default\/(\d+)\?.*/.exec(entry.link[3].href);
+                if (pid && pid[1]) {
+                  comment.parentId = pid[1];
+                }
+              }
+            }
+            comment.deleteclass = 'item-control blog-admin';
+            if (entry.gd$extendedProperty) {
+              for (var k in entry.gd$extendedProperty) {
+                if (entry.gd$extendedProperty[k].name == 'blogger.itemClass') {
+                  comment.deleteclass += ' ' + entry.gd$extendedProperty[k].value;
+                } else if (entry.gd$extendedProperty[k].name == 'blogger.displayTime') {
+                  comment.displayTime = entry.gd$extendedProperty[k].value;
+                }
+              }
+            }
+            comments.push(comment);
+          }
+        }
+        return comments;
+      };
+
+      var paginator = function(callback) {
+        if (hasMore()) {
+          var url = config.feed + '?alt=json&v=2&orderby=published&reverse=false&max-results=50';
+          if (cursor) {
+            url += '&published-min=' + new Date(cursor).toISOString();
+          }
+          window.bloggercomments = function(data) {
+            var parsed = parse(data);
+            cursor = parsed.length < 50 ? null
+                : parseInt(parsed[parsed.length - 1].timestamp) + 1
+            callback(parsed);
+            window.bloggercomments = null;
+          }
+          url += '&callback=bloggercomments';
+          var script = document.createElement('script');
+          script.type = 'text/javascript';
+          script.src = url;
+          document.getElementsByTagName('head')[0].appendChild(script);
+        }
+      };
+      var hasMore = function() {
+        return !!cursor;
+      };
+      var getMeta = function(key, comment) {
+        if ('iswriter' == key) {
+          var matches = !!comment.author
+              && comment.author.name == config.authorName
+              && comment.author.profileUrl == config.authorUrl;
+          return matches ? 'true' : '';
+        } else if ('deletelink' == key) {
+          return config.baseUri + '/comment/delete/'
+               + config.blogId + '/' + comment.id;
+        } else if ('deleteclass' == key) {
+          return comment.deleteclass;
+        }
+        return '';
+      };
+
+      var replybox = null;
+      var replyUrlParts = null;
+      var replyParent = undefined;
+
+      var onReply = function(commentId, domId) {
+        if (replybox == null) {
+          // lazily cache replybox, and adjust to suit this style:
+          replybox = document.getElementById('comment-editor');
+          if (replybox != null) {
+            replybox.height = '250px';
+            replybox.style.display = 'block';
+            replyUrlParts = replybox.src.split('#');
+          }
+        }
+        if (replybox && (commentId !== replyParent)) {
+          replybox.src = '';
+          document.getElementById(domId).insertBefore(replybox, null);
+          replybox.src = replyUrlParts[0]
+              + (commentId ? '&parentID=' + commentId : '')
+              + '#' + replyUrlParts[1];
+          replyParent = commentId;
+        }
+      };
+
+      var hash = (window.location.hash || '#').substring(1);
+      var startThread, targetComment;
+      if (/^comment-form_/.test(hash)) {
+        startThread = hash.substring('comment-form_'.length);
+      } else if (/^c[0-9]+$/.test(hash)) {
+        targetComment = hash.substring(1);
+      }
+
+      // Configure commenting API:
+      var configJso = {
+        'maxDepth': config.maxThreadDepth
+      };
+      var provider = {
+        'id': config.postId,
+        'data': items,
+        'loadNext': paginator,
+        'hasMore': hasMore,
+        'getMeta': getMeta,
+        'onReply': onReply,
+        'rendered': true,
+        'initComment': targetComment,
+        'initReplyThread': startThread,
+        'config': configJso,
+        'messages': msgs
+      };
+
+      var render = function() {
+        if (window.goog && window.goog.comments) {
+          var holder = document.getElementById('comment-holder');
+          window.goog.comments.render(holder, provider);
+        }
+      };
+
+      // render now, or queue to render when library loads:
+      if (window.goog && window.goog.comments) {
+        render();
+      } else {
+        window.goog = window.goog || {};
+        window.goog.comments = window.goog.comments || {};
+        window.goog.comments.loadQueue = window.goog.comments.loadQueue || [];
+        window.goog.comments.loadQueue.push(render);
+      }
+    })();
+// ]]>
+  </script>
+<div id='comment-holder'>
+<div class="comment-thread toplevel-thread"><ol id="top-ra"><li class="comment" id="c2870192190452626428"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Robert Vezina</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="une-annee-rocambolesque-ebouriffante-et.html%3FshowComment=1347018115672.html#c2870192190452626428">7 septembre 2012 à 07 h 41</a></span></div><p class="comment-content">Wow! Que dire de plus! Un article passionnant qui démontre combien vous avez appris à vivre dans le coeur, la seule vraie place où on retrouve le bonheur, la liberté et la paix intérieure.<br>Quelqu&#39;un a écrit: &quot;Rêve comme si tu vivais éternellement et vis comme si tu allais mourir aujourd&#39;hui.&quot; Votre quête de vivre au présent, de profiter de chaque instant est la clé! Pour ce qui est du futur, la meilleure façon de le bâtir est de vivre pleinement le présent avec des valeurs solides et de rêver avec son coeur.<br><br>Je vous laisse sur une petite phrase de mère Térésa qui m&#39;inspire et qui je crois fait maintenant partie de vos vie:<br>&quot;Ne laissez personne venir à vous et repartir sans être plus heureux&quot;<br><br>Bonne continuité!</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="2870192190452626428">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/2870192190452626428">Effacer</a></span></span></div><div class="comment-replies"><div id="c2870192190452626428-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c2870192190452626428-ra" class="thread-chrome thread-expanded"><div></div><div id="c2870192190452626428-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="2870192190452626428">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c2870192190452626428-ce"></div></li><li class="comment" id="c918012171241644335"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Alain Cyr</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="une-annee-rocambolesque-ebouriffante-et.html%3FshowComment=1347057715644.html#c918012171241644335">7 septembre 2012 à 18 h 41</a></span></div><p class="comment-content">Bon 1er anniversaire à la Fuite ! <br>Une année bien remplie... <br>Vous avez la chance et le courage de réaliser un grand rêve, profitez-en à plein !                        <br><br>Quel expérience de vie exaltante, prendre le temps de voir comment se passe la vie aux 4 coins de la planète. C&#39;est bon de voir se préciser vos attentes!  C&#39;est à suivre...                                                  <br><br>On vous aime Mom &amp; Dad xxx</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="918012171241644335">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/918012171241644335">Effacer</a></span></span></div><div class="comment-replies"><div id="c918012171241644335-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c918012171241644335-ra" class="thread-chrome thread-expanded"><div></div><div id="c918012171241644335-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="918012171241644335">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c918012171241644335-ce"></div></li><li class="comment" id="c3998020589547282325"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Francis</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="une-annee-rocambolesque-ebouriffante-et.html%3FshowComment=1347085600355.html#c3998020589547282325">8 septembre 2012 à 02 h 26</a></span></div><p class="comment-content">Le café instant, le choix des nomades. Toujours meilleur qu&#39;un espresso moche comme il s&#39;en fait trop. Tu as ma bénédiction. Parcontre, pour ce qui est du déca... ;)<br><br>Pour ce qui est de votre nouvelle étape, Il m&#39;apparait que vous êtes arrivés ailleurs; vous vous êtes suffisament perdus pour commencer à retrouver en vous ce que vous ne cherchiez pas. Mais ça sonne méditation ésotérique alors j&#39;en rajouterai pas.</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="3998020589547282325">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/3998020589547282325">Effacer</a></span></span></div><div class="comment-replies"><div id="c3998020589547282325-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c3998020589547282325-ra" class="thread-chrome thread-expanded"><div></div><div id="c3998020589547282325-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="3998020589547282325">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c3998020589547282325-ce"></div></li><li class="comment" id="c3199793016633562245"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">André Malenfant</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="une-annee-rocambolesque-ebouriffante-et.html%3FshowComment=1347086094515.html#c3199793016633562245">8 septembre 2012 à 02 h 34</a></span></div><p class="comment-content">Merci Robert! Tes citations sont justes et nous les garderons en mémoire!</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="3199793016633562245">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/3199793016633562245">Effacer</a></span></span></div><div class="comment-replies"><div id="c3199793016633562245-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c3199793016633562245-ra" class="thread-chrome thread-expanded"><div></div><div id="c3199793016633562245-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="3199793016633562245">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c3199793016633562245-ce"></div></li><li class="comment" id="c2068201888146237974"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">André Malenfant</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="une-annee-rocambolesque-ebouriffante-et.html%3FshowComment=1347086172190.html#c2068201888146237974">8 septembre 2012 à 02 h 36</a></span></div><p class="comment-content">Enfin, j&#39;ai ta bénédiction! Durant tout ce temps j&#39;ai eu bien peur de te décevoir ;)<br><br>Merci pour l&#39;ésotérisme, ça fait du bien!</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="2068201888146237974">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/2068201888146237974">Effacer</a></span></span></div><div class="comment-replies"><div id="c2068201888146237974-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c2068201888146237974-ra" class="thread-chrome thread-expanded"><div></div><div id="c2068201888146237974-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="2068201888146237974">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c2068201888146237974-ce"></div></li><li class="comment" id="c457122194626724149"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">André Malenfant</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="une-annee-rocambolesque-ebouriffante-et.html%3FshowComment=1347086212490.html#c457122194626724149">8 septembre 2012 à 02 h 36</a></span></div><p class="comment-content">Merci Marilène, Merci Alain! De vos voeux et de vos visites toujours si appréciées!</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="457122194626724149">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/457122194626724149">Effacer</a></span></span></div><div class="comment-replies"><div id="c457122194626724149-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c457122194626724149-ra" class="thread-chrome thread-expanded"><div></div><div id="c457122194626724149-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="457122194626724149">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c457122194626724149-ce"></div></li><li class="comment" id="c5670384581402973466"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Dcdk</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="une-annee-rocambolesque-ebouriffante-et.html%3FshowComment=1347097112840.html#c5670384581402973466">8 septembre 2012 à 05 h 38</a></span></div><p class="comment-content">Love the photos and would love to see the English version....</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="5670384581402973466">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/5670384581402973466">Effacer</a></span></span></div><div class="comment-replies"><div id="c5670384581402973466-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c5670384581402973466-ra" class="thread-chrome thread-expanded"><div></div><div id="c5670384581402973466-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="5670384581402973466">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c5670384581402973466-ce"></div></li><li class="comment" id="c3270872038763463699"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">André Malenfant</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="une-annee-rocambolesque-ebouriffante-et.html%3FshowComment=1347101082343.html#c3270872038763463699">8 septembre 2012 à 06 h 44</a></span></div><p class="comment-content">Thanks Dennie and Dk! We have been thinking for a while to have some english contents for our friends not fortunate enough to read french ;) one day!</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="3270872038763463699">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/3270872038763463699">Effacer</a></span></span></div><div class="comment-replies"><div id="c3270872038763463699-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c3270872038763463699-ra" class="thread-chrome thread-expanded"><div></div><div id="c3270872038763463699-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="3270872038763463699">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c3270872038763463699-ce"></div></li><li class="comment" id="c5485038454380368970"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Eileen</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="une-annee-rocambolesque-ebouriffante-et.html%3FshowComment=1347740714242.html#c5485038454380368970">15 septembre 2012 à 16 h 25</a></span></div><p class="comment-content">Quoi dire à vous deux que CHAPEAU et BRAVO (oui en majuscule SVP, hi,hi)! Mais quel témoignage. J&#39;en n&#39;avais des frissons à te lire André. En quelque part dans vos ecrits je vous decouvre autrement. Quel beau parcours et merci d&#39;avoir patagé votre année à la fuite.C&#39;est toujours un plaisir de vous lire et vous suivre. Chin,Chin à la bonne vôtre.  Au plaisir les chanceux. Gros bisous.</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="5485038454380368970">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/5485038454380368970">Effacer</a></span></span></div><div class="comment-replies"><div id="c5485038454380368970-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c5485038454380368970-ra" class="thread-chrome thread-expanded"><div></div><div id="c5485038454380368970-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="5485038454380368970">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c5485038454380368970-ce"></div></li><li class="comment" id="c6257843092736273625"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Rosears</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="une-annee-rocambolesque-ebouriffante-et.html%3FshowComment=1349225642504.html#c6257843092736273625">2 octobre 2012 à 20 h 54</a></span></div><p class="comment-content">Super article<br>Boire du café instantané? Beurk... Quand je n&#39;ai pas de bon café, je préfère du bon chaï <br>Donnez de vos nouvelles <br>Xx<br>Rose</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="6257843092736273625">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/6257843092736273625">Effacer</a></span></span></div><div class="comment-replies"><div id="c6257843092736273625-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c6257843092736273625-ra" class="thread-chrome thread-expanded"><div></div><div id="c6257843092736273625-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="6257843092736273625">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c6257843092736273625-ce"></div></li><li class="comment" id="c5377795802732907075"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Rosears</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="une-annee-rocambolesque-ebouriffante-et.html%3FshowComment=1349225720877.html#c5377795802732907075">2 octobre 2012 à 20 h 55</a></span></div><p class="comment-content">Super article<br>Du café instant. Beurk... Le chaï est bien meilleur...<br>Donnez des nouvelles<br>Xx<br>Rose</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="5377795802732907075">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/5377795802732907075">Effacer</a></span></span></div><div class="comment-replies"><div id="c5377795802732907075-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c5377795802732907075-ra" class="thread-chrome thread-expanded"><div></div><div id="c5377795802732907075-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="5377795802732907075">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c5377795802732907075-ce"></div></li><li class="comment" id="c8149665364620548941"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Anonyme</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="une-annee-rocambolesque-ebouriffante-et.html%3FshowComment=1670026471906.html#c8149665364620548941">2 décembre 2022 à 19 h 14</a></span></div><p class="comment-content">There are very few drawbacks to a cellular on-line on line casino, but if we may highlight one, it might be the fact that|the truth that} some don&#8217;t have as many games as the desktop version. The bonuses are generally different, too, so <a href="https://vigorbattle.com/" rel="nofollow">카지노 사이트</a> this is one thing to verify earlier than you create an  account. Mobile on line casino apps should be downloaded and put in onto your cellular device, whereas a cellular browser on line casino may be accessed directly out of your web browser. There&#8217;s no doubt that each one|that each one} the cellular casinos on our record offer tantalizing bonuses &#8211; however  Cafe Casino outdoes them all with its supermassive welcome bonus and thrilling common promos.</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="8149665364620548941">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/8149665364620548941">Effacer</a></span></span></div><div class="comment-replies"><div id="c8149665364620548941-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c8149665364620548941-ra" class="thread-chrome thread-expanded"><div></div><div id="c8149665364620548941-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="8149665364620548941">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c8149665364620548941-ce"></div></li></ol><div id="top-continue" class="continue"><a class="comment-reply" target="_self">Ajouter un commentaire</a></div><div class="comment-replybox-thread" id="top-ce"></div><div class="loadmore hidden" data-post-id="7650032714737716782"><a target="_self">Charger la suite...</a></div></div>
+</div>
+</div>
+<p class='comment-footer'>
+<div class='comment-form'>
+<a name='comment-form'></a>
+<p>
+</p>
+<a href='https://www.blogger.com/comment/frame/2960778330733091697?po=7650032714737716782&hl=fr-CA&saa=85391&origin=http://www.lafuiteautourdumonde.com' id='comment-editor-src'></a>
+<iframe allowtransparency='true' class='blogger-iframe-colorize blogger-comment-from-post' frameborder='0' height='410px' id='comment-editor' name='comment-editor' src='une-annee-rocambolesque-ebouriffante-et.html' width='100%'></iframe>
+<script src='https://www.blogger.com/static/v1/jsbin/1167892209-comment_from_post_iframe.js' type='text/javascript'></script>
+<script type='text/javascript'>
+      BLOG_CMT_createIframe('https://www.blogger.com/rpc_relay.html');
+    </script>
+</div>
+</p>
 <div id='backlinks-container'>
 <div id='Blog1_backlinks-container'>
 </div>

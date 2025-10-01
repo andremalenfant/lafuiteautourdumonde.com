@@ -1148,6 +1148,210 @@ Nous relançons l'invitation à tous: Venez nous rejoindre! Nous serons à Bangk
 </ItemPage>
 </div>
 <div id='disqus_thread' style='margin-top: 20px;'></div>
+<div class='comments' id='comments'>
+<a name='comments'></a>
+<h4>6&#160;commentaires:</h4>
+<div class='comments-content'>
+<script async='async' src='la-fuite-de-la-visite.html' type='text/javascript'></script>
+<script type='text/javascript'>
+    (function() {
+      var items = null;
+      var msgs = null;
+      var config = {};
+
+// <![CDATA[
+      var cursor = null;
+      if (items && items.length > 0) {
+        cursor = parseInt(items[items.length - 1].timestamp) + 1;
+      }
+
+      var bodyFromEntry = function(entry) {
+        var text = (entry &&
+                    ((entry.content && entry.content.$t) ||
+                     (entry.summary && entry.summary.$t))) ||
+            '';
+        if (entry && entry.gd$extendedProperty) {
+          for (var k in entry.gd$extendedProperty) {
+            if (entry.gd$extendedProperty[k].name == 'blogger.contentRemoved') {
+              return '<span class="deleted-comment">' + text + '</span>';
+            }
+          }
+        }
+        return text;
+      }
+
+      var parse = function(data) {
+        cursor = null;
+        var comments = [];
+        if (data && data.feed && data.feed.entry) {
+          for (var i = 0, entry; entry = data.feed.entry[i]; i++) {
+            var comment = {};
+            // comment ID, parsed out of the original id format
+            var id = /blog-(\d+).post-(\d+)/.exec(entry.id.$t);
+            comment.id = id ? id[2] : null;
+            comment.body = bodyFromEntry(entry);
+            comment.timestamp = Date.parse(entry.published.$t) + '';
+            if (entry.author && entry.author.constructor === Array) {
+              var auth = entry.author[0];
+              if (auth) {
+                comment.author = {
+                  name: (auth.name ? auth.name.$t : undefined),
+                  profileUrl: (auth.uri ? auth.uri.$t : undefined),
+                  avatarUrl: (auth.gd$image ? auth.gd$image.src : undefined)
+                };
+              }
+            }
+            if (entry.link) {
+              if (entry.link[2]) {
+                comment.link = comment.permalink = entry.link[2].href;
+              }
+              if (entry.link[3]) {
+                var pid = /.*comments\/default\/(\d+)\?.*/.exec(entry.link[3].href);
+                if (pid && pid[1]) {
+                  comment.parentId = pid[1];
+                }
+              }
+            }
+            comment.deleteclass = 'item-control blog-admin';
+            if (entry.gd$extendedProperty) {
+              for (var k in entry.gd$extendedProperty) {
+                if (entry.gd$extendedProperty[k].name == 'blogger.itemClass') {
+                  comment.deleteclass += ' ' + entry.gd$extendedProperty[k].value;
+                } else if (entry.gd$extendedProperty[k].name == 'blogger.displayTime') {
+                  comment.displayTime = entry.gd$extendedProperty[k].value;
+                }
+              }
+            }
+            comments.push(comment);
+          }
+        }
+        return comments;
+      };
+
+      var paginator = function(callback) {
+        if (hasMore()) {
+          var url = config.feed + '?alt=json&v=2&orderby=published&reverse=false&max-results=50';
+          if (cursor) {
+            url += '&published-min=' + new Date(cursor).toISOString();
+          }
+          window.bloggercomments = function(data) {
+            var parsed = parse(data);
+            cursor = parsed.length < 50 ? null
+                : parseInt(parsed[parsed.length - 1].timestamp) + 1
+            callback(parsed);
+            window.bloggercomments = null;
+          }
+          url += '&callback=bloggercomments';
+          var script = document.createElement('script');
+          script.type = 'text/javascript';
+          script.src = url;
+          document.getElementsByTagName('head')[0].appendChild(script);
+        }
+      };
+      var hasMore = function() {
+        return !!cursor;
+      };
+      var getMeta = function(key, comment) {
+        if ('iswriter' == key) {
+          var matches = !!comment.author
+              && comment.author.name == config.authorName
+              && comment.author.profileUrl == config.authorUrl;
+          return matches ? 'true' : '';
+        } else if ('deletelink' == key) {
+          return config.baseUri + '/comment/delete/'
+               + config.blogId + '/' + comment.id;
+        } else if ('deleteclass' == key) {
+          return comment.deleteclass;
+        }
+        return '';
+      };
+
+      var replybox = null;
+      var replyUrlParts = null;
+      var replyParent = undefined;
+
+      var onReply = function(commentId, domId) {
+        if (replybox == null) {
+          // lazily cache replybox, and adjust to suit this style:
+          replybox = document.getElementById('comment-editor');
+          if (replybox != null) {
+            replybox.height = '250px';
+            replybox.style.display = 'block';
+            replyUrlParts = replybox.src.split('#');
+          }
+        }
+        if (replybox && (commentId !== replyParent)) {
+          replybox.src = '';
+          document.getElementById(domId).insertBefore(replybox, null);
+          replybox.src = replyUrlParts[0]
+              + (commentId ? '&parentID=' + commentId : '')
+              + '#' + replyUrlParts[1];
+          replyParent = commentId;
+        }
+      };
+
+      var hash = (window.location.hash || '#').substring(1);
+      var startThread, targetComment;
+      if (/^comment-form_/.test(hash)) {
+        startThread = hash.substring('comment-form_'.length);
+      } else if (/^c[0-9]+$/.test(hash)) {
+        targetComment = hash.substring(1);
+      }
+
+      // Configure commenting API:
+      var configJso = {
+        'maxDepth': config.maxThreadDepth
+      };
+      var provider = {
+        'id': config.postId,
+        'data': items,
+        'loadNext': paginator,
+        'hasMore': hasMore,
+        'getMeta': getMeta,
+        'onReply': onReply,
+        'rendered': true,
+        'initComment': targetComment,
+        'initReplyThread': startThread,
+        'config': configJso,
+        'messages': msgs
+      };
+
+      var render = function() {
+        if (window.goog && window.goog.comments) {
+          var holder = document.getElementById('comment-holder');
+          window.goog.comments.render(holder, provider);
+        }
+      };
+
+      // render now, or queue to render when library loads:
+      if (window.goog && window.goog.comments) {
+        render();
+      } else {
+        window.goog = window.goog || {};
+        window.goog.comments = window.goog.comments || {};
+        window.goog.comments.loadQueue = window.goog.comments.loadQueue || [];
+        window.goog.comments.loadQueue.push(render);
+      }
+    })();
+// ]]>
+  </script>
+<div id='comment-holder'>
+<div class="comment-thread toplevel-thread"><ol id="top-ra"><li class="comment" id="c1617785086209525216"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Robert Vézina</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="la-fuite-de-la-visite.html%3FshowComment=1340732529191.html#c1617785086209525216">26 juin 2012 à 13 h 42</a></span></div><p class="comment-content">Wow, quel beau récit! J&#39;ai hâte de l&#39;entendre de la bouche de tes parents, ce sera sûrement magique! Vos photos sont très éloquentes de votre bien-être.<br>Je ne crois pas qu&#39;on se verra à Bangkok mais l&#39;Australie? On ne sait jamais!<br>Bonne continuité :-)</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="1617785086209525216">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://draft.blogger.com/comment/delete/2960778330733091697/1617785086209525216">Effacer</a></span></span></div><div class="comment-replies"><div id="c1617785086209525216-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c1617785086209525216-ra" class="thread-chrome thread-expanded"><div></div><div id="c1617785086209525216-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="1617785086209525216">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c1617785086209525216-ce"></div></li><li class="comment" id="c217430283063515760"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Marilène Laprise</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="la-fuite-de-la-visite.html%3FshowComment=1340759773619.html#c217430283063515760">26 juin 2012 à 21 h 16</a></span></div><p class="comment-content">Fabuleux voyage grâce à vous deux!<br>Un programme sur mesure, beaucoup de moments forts...<br>Bali, endroit magique, mystique pour des retrouvailles réconfortantes, jusqu&#39;à Bangkok, ville charmante ou nous vous avons laissé dans votre petit chez vous de luxe.<br>Merci encore pour tout, vous êtes si généreux. Kapounka, Kapounkap,<br>Marilène et Alain<br>xxx</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="217430283063515760">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://draft.blogger.com/comment/delete/2960778330733091697/217430283063515760">Effacer</a></span></span></div><div class="comment-replies"><div id="c217430283063515760-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c217430283063515760-ra" class="thread-chrome thread-expanded"><div></div><div id="c217430283063515760-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="217430283063515760">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c217430283063515760-ce"></div></li><li class="comment" id="c21087114386271394"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Marie-Claude</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="la-fuite-de-la-visite.html%3FshowComment=1340858878046.html#c21087114386271394">28 juin 2012 à 00 h 47</a></span></div><p class="comment-content">Merci Robert, oui ce fût un réel plaisir de voyager avec mes parents :) L&#39;Australie peut-être!? On commence à regarder ça de plus près dans les prochaines semaines... on s&#39;en reparle alors!</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="21087114386271394">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://draft.blogger.com/comment/delete/2960778330733091697/21087114386271394">Effacer</a></span></span></div><div class="comment-replies"><div id="c21087114386271394-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c21087114386271394-ra" class="thread-chrome thread-expanded"><div></div><div id="c21087114386271394-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="21087114386271394">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c21087114386271394-ce"></div></li><li class="comment" id="c6325583565398940397"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Marie-Claude</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="la-fuite-de-la-visite.html%3FshowComment=1340859069519.html#c6325583565398940397">28 juin 2012 à 00 h 51</a></span></div><p class="comment-content">Sawadika! Merci d&#39;avoir fait se bout de chemin avec nous :) Je suis si contente d&#39;avoir pu partager, en personne, 1 mois de découvertes et d&#39;aventures avec vous deux. Je vous aime! xxx</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="6325583565398940397">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://draft.blogger.com/comment/delete/2960778330733091697/6325583565398940397">Effacer</a></span></span></div><div class="comment-replies"><div id="c6325583565398940397-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c6325583565398940397-ra" class="thread-chrome thread-expanded"><div></div><div id="c6325583565398940397-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="6325583565398940397">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c6325583565398940397-ce"></div></li><li class="comment" id="c2874028145354810906"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Alain Cyr</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="la-fuite-de-la-visite.html%3FshowComment=1341675584796.html#c2874028145354810906">7 juillet 2012 à 11 h 39</a></span></div><p class="comment-content">Beau flash back de la fête des Pères 2012 !<br><br>Quelle belle journée planifiée par Marie-Claude au marché &#39;Chatuchak&#39; de Bangkok !<br>Au menu, visite des différents marchands... vêtements, poteries, souvenirs... collations, repas avec méga limonade glacée et une bonne grosse Chang froide pour le papa !<br><br>La section 7 du marché a retenu notre attention pour ses artistes ! Peintures, Bronzes, sculptures, musique... ambiance plein air et festive !<br><br>Pour terminer la journée, une tournée pour tout le monde ! <br>Quoi de mieux qu&#39;un bon massage de pieds...<br><br>Pop :-)</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="2874028145354810906">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://draft.blogger.com/comment/delete/2960778330733091697/2874028145354810906">Effacer</a></span></span></div><div class="comment-replies"><div id="c2874028145354810906-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c2874028145354810906-ra" class="thread-chrome thread-expanded"><div></div><div id="c2874028145354810906-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="2874028145354810906">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c2874028145354810906-ce"></div></li><li class="comment" id="c2848232614168095438"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Marie-Claude</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="la-fuite-de-la-visite.html%3FshowComment=1341752339592.html#c2848232614168095438">8 juillet 2012 à 08 h 58</a></span></div><p class="comment-content">Merci pour la photo!!! Oui, quelle belle journée de la fête des pères qui s&#39;est terminée avec un souper sushi au Central World! :) xxx</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="2848232614168095438">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://draft.blogger.com/comment/delete/2960778330733091697/2848232614168095438">Effacer</a></span></span></div><div class="comment-replies"><div id="c2848232614168095438-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c2848232614168095438-ra" class="thread-chrome thread-expanded"><div></div><div id="c2848232614168095438-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="2848232614168095438">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c2848232614168095438-ce"></div></li></ol><div id="top-continue" class="continue"><a class="comment-reply" target="_self">Ajouter un commentaire</a></div><div class="comment-replybox-thread" id="top-ce"></div><div class="loadmore hidden" data-post-id="1356270329851562000"><a target="_self">Charger la suite...</a></div></div>
+</div>
+</div>
+<p class='comment-footer'>
+<div class='comment-form'>
+<a name='comment-form'></a>
+<p>
+</p>
+<a href='https://draft.blogger.com/comment/frame/2960778330733091697?po=1356270329851562000&hl=fr-CA&saa=85391&origin=http://www.lafuiteautourdumonde.com' id='comment-editor-src'></a>
+<iframe allowtransparency='true' class='blogger-iframe-colorize blogger-comment-from-post' frameborder='0' height='410px' id='comment-editor' name='comment-editor' src='la-fuite-de-la-visite.html' width='100%'></iframe>
+<script src='https://www.blogger.com/static/v1/jsbin/1167892209-comment_from_post_iframe.js' type='text/javascript'></script>
+<script type='text/javascript'>
+      BLOG_CMT_createIframe('https://draft.blogger.com/rpc_relay.html');
+    </script>
+</div>
+</p>
 <div id='backlinks-container'>
 <div id='Blog1_backlinks-container'>
 </div>

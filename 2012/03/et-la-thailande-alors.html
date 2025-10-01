@@ -1144,6 +1144,210 @@ Et nous voici donc à Koh Lanta, une île vraiment très relaxe où nous avons t
 </ItemPage>
 </div>
 <div id='disqus_thread' style='margin-top: 20px;'></div>
+<div class='comments' id='comments'>
+<a name='comments'></a>
+<h4>10&#160;commentaires:</h4>
+<div class='comments-content'>
+<script async='async' src='et-la-thailande-alors.html' type='text/javascript'></script>
+<script type='text/javascript'>
+    (function() {
+      var items = null;
+      var msgs = null;
+      var config = {};
+
+// <![CDATA[
+      var cursor = null;
+      if (items && items.length > 0) {
+        cursor = parseInt(items[items.length - 1].timestamp) + 1;
+      }
+
+      var bodyFromEntry = function(entry) {
+        var text = (entry &&
+                    ((entry.content && entry.content.$t) ||
+                     (entry.summary && entry.summary.$t))) ||
+            '';
+        if (entry && entry.gd$extendedProperty) {
+          for (var k in entry.gd$extendedProperty) {
+            if (entry.gd$extendedProperty[k].name == 'blogger.contentRemoved') {
+              return '<span class="deleted-comment">' + text + '</span>';
+            }
+          }
+        }
+        return text;
+      }
+
+      var parse = function(data) {
+        cursor = null;
+        var comments = [];
+        if (data && data.feed && data.feed.entry) {
+          for (var i = 0, entry; entry = data.feed.entry[i]; i++) {
+            var comment = {};
+            // comment ID, parsed out of the original id format
+            var id = /blog-(\d+).post-(\d+)/.exec(entry.id.$t);
+            comment.id = id ? id[2] : null;
+            comment.body = bodyFromEntry(entry);
+            comment.timestamp = Date.parse(entry.published.$t) + '';
+            if (entry.author && entry.author.constructor === Array) {
+              var auth = entry.author[0];
+              if (auth) {
+                comment.author = {
+                  name: (auth.name ? auth.name.$t : undefined),
+                  profileUrl: (auth.uri ? auth.uri.$t : undefined),
+                  avatarUrl: (auth.gd$image ? auth.gd$image.src : undefined)
+                };
+              }
+            }
+            if (entry.link) {
+              if (entry.link[2]) {
+                comment.link = comment.permalink = entry.link[2].href;
+              }
+              if (entry.link[3]) {
+                var pid = /.*comments\/default\/(\d+)\?.*/.exec(entry.link[3].href);
+                if (pid && pid[1]) {
+                  comment.parentId = pid[1];
+                }
+              }
+            }
+            comment.deleteclass = 'item-control blog-admin';
+            if (entry.gd$extendedProperty) {
+              for (var k in entry.gd$extendedProperty) {
+                if (entry.gd$extendedProperty[k].name == 'blogger.itemClass') {
+                  comment.deleteclass += ' ' + entry.gd$extendedProperty[k].value;
+                } else if (entry.gd$extendedProperty[k].name == 'blogger.displayTime') {
+                  comment.displayTime = entry.gd$extendedProperty[k].value;
+                }
+              }
+            }
+            comments.push(comment);
+          }
+        }
+        return comments;
+      };
+
+      var paginator = function(callback) {
+        if (hasMore()) {
+          var url = config.feed + '?alt=json&v=2&orderby=published&reverse=false&max-results=50';
+          if (cursor) {
+            url += '&published-min=' + new Date(cursor).toISOString();
+          }
+          window.bloggercomments = function(data) {
+            var parsed = parse(data);
+            cursor = parsed.length < 50 ? null
+                : parseInt(parsed[parsed.length - 1].timestamp) + 1
+            callback(parsed);
+            window.bloggercomments = null;
+          }
+          url += '&callback=bloggercomments';
+          var script = document.createElement('script');
+          script.type = 'text/javascript';
+          script.src = url;
+          document.getElementsByTagName('head')[0].appendChild(script);
+        }
+      };
+      var hasMore = function() {
+        return !!cursor;
+      };
+      var getMeta = function(key, comment) {
+        if ('iswriter' == key) {
+          var matches = !!comment.author
+              && comment.author.name == config.authorName
+              && comment.author.profileUrl == config.authorUrl;
+          return matches ? 'true' : '';
+        } else if ('deletelink' == key) {
+          return config.baseUri + '/comment/delete/'
+               + config.blogId + '/' + comment.id;
+        } else if ('deleteclass' == key) {
+          return comment.deleteclass;
+        }
+        return '';
+      };
+
+      var replybox = null;
+      var replyUrlParts = null;
+      var replyParent = undefined;
+
+      var onReply = function(commentId, domId) {
+        if (replybox == null) {
+          // lazily cache replybox, and adjust to suit this style:
+          replybox = document.getElementById('comment-editor');
+          if (replybox != null) {
+            replybox.height = '250px';
+            replybox.style.display = 'block';
+            replyUrlParts = replybox.src.split('#');
+          }
+        }
+        if (replybox && (commentId !== replyParent)) {
+          replybox.src = '';
+          document.getElementById(domId).insertBefore(replybox, null);
+          replybox.src = replyUrlParts[0]
+              + (commentId ? '&parentID=' + commentId : '')
+              + '#' + replyUrlParts[1];
+          replyParent = commentId;
+        }
+      };
+
+      var hash = (window.location.hash || '#').substring(1);
+      var startThread, targetComment;
+      if (/^comment-form_/.test(hash)) {
+        startThread = hash.substring('comment-form_'.length);
+      } else if (/^c[0-9]+$/.test(hash)) {
+        targetComment = hash.substring(1);
+      }
+
+      // Configure commenting API:
+      var configJso = {
+        'maxDepth': config.maxThreadDepth
+      };
+      var provider = {
+        'id': config.postId,
+        'data': items,
+        'loadNext': paginator,
+        'hasMore': hasMore,
+        'getMeta': getMeta,
+        'onReply': onReply,
+        'rendered': true,
+        'initComment': targetComment,
+        'initReplyThread': startThread,
+        'config': configJso,
+        'messages': msgs
+      };
+
+      var render = function() {
+        if (window.goog && window.goog.comments) {
+          var holder = document.getElementById('comment-holder');
+          window.goog.comments.render(holder, provider);
+        }
+      };
+
+      // render now, or queue to render when library loads:
+      if (window.goog && window.goog.comments) {
+        render();
+      } else {
+        window.goog = window.goog || {};
+        window.goog.comments = window.goog.comments || {};
+        window.goog.comments.loadQueue = window.goog.comments.loadQueue || [];
+        window.goog.comments.loadQueue.push(render);
+      }
+    })();
+// ]]>
+  </script>
+<div id='comment-holder'>
+<div class="comment-thread toplevel-thread"><ol id="top-ra"><li class="comment" id="c5536715545725386731"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user"><a href="http://www.facebook.com/people/Luc-Poulette/667661314" rel="nofollow">Luc Poulette</a></cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="et-la-thailande-alors.html%3FshowComment=1332793946543.html#c5536715545725386731">26 mars 2012 à 16 h 32</a></span></div><p class="comment-content">Je suis très content pour vous et très content d&#39;avoir de vos nouvelles. N&#39;hésitez pas a mettre à jour votre blog, nous vous suivons avec un grand intérêt.</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="5536715545725386731">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/5536715545725386731">Effacer</a></span></span></div><div class="comment-replies"><div id="c5536715545725386731-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c5536715545725386731-ra" class="thread-chrome thread-expanded"><div></div><div id="c5536715545725386731-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="5536715545725386731">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c5536715545725386731-ce"></div></li><li class="comment" id="c7998444709519737625"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Alain Cyr</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="et-la-thailande-alors.html%3FshowComment=1332796721028.html#c7998444709519737625">26 mars 2012 à 17 h 18</a></span></div><p class="comment-content">Votre 200e jour autour du monde... Ça se fête!<br>Vos photos de Koh Phi Phi sont magnifiques !</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="7998444709519737625">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/7998444709519737625">Effacer</a></span></span></div><div class="comment-replies"><div id="c7998444709519737625-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c7998444709519737625-ra" class="thread-chrome thread-expanded"><div></div><div id="c7998444709519737625-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="7998444709519737625">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c7998444709519737625-ce"></div></li><li class="comment" id="c7642067438033302037"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Robert Vezina</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="et-la-thailande-alors.html%3FshowComment=1332877754736.html#c7642067438033302037">27 mars 2012 à 15 h 49</a></span></div><p class="comment-content">Oui, je me verrais très bien aller faire un tour au Let&#39;s Relax Spa au Terminal 21 !!!<br>Bon 200ème!</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="7642067438033302037">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/7642067438033302037">Effacer</a></span></span></div><div class="comment-replies"><div id="c7642067438033302037-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c7642067438033302037-ra" class="thread-chrome thread-expanded"><div></div><div id="c7642067438033302037-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="7642067438033302037">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c7642067438033302037-ce"></div></li><li class="comment" id="c3003628235238477817"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Marie-Claude</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="et-la-thailande-alors.html%3FshowComment=1332910424451.html#c3003628235238477817">28 mars 2012 à 00 h 53</a></span></div><p class="comment-content">Merci Luc, oui nous allons continuer d&#39;alimenter notre blog le plus souvent possible. J&#39;ai eu la remarque de quelques de mes amis aussi! :)</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="3003628235238477817">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/3003628235238477817">Effacer</a></span></span></div><div class="comment-replies"><div id="c3003628235238477817-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c3003628235238477817-ra" class="thread-chrome thread-expanded"><div></div><div id="c3003628235238477817-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="3003628235238477817">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c3003628235238477817-ce"></div></li><li class="comment" id="c2037470410546830312"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Marie-Claude</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="et-la-thailande-alors.html%3FshowComment=1332910580876.html#c2037470410546830312">28 mars 2012 à 00 h 56</a></span></div><p class="comment-content">Merci! Oui, 200 jours! Ça nous a donné une autre bonne excuse pour un bon souper au resto :) Nous ajouterons des photos de Phi Phi bientôt... xxx</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="2037470410546830312">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/2037470410546830312">Effacer</a></span></span></div><div class="comment-replies"><div id="c2037470410546830312-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c2037470410546830312-ra" class="thread-chrome thread-expanded"><div></div><div id="c2037470410546830312-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="2037470410546830312">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c2037470410546830312-ce"></div></li><li class="comment" id="c6187903644027291846"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Marie-Claude</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="et-la-thailande-alors.html%3FshowComment=1332911118383.html#c6187903644027291846">28 mars 2012 à 01 h 05</a></span></div><p class="comment-content">Quelle bonne idée, j&#39;irai peut-être faire un tour dans quelques jours :)</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="6187903644027291846">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/6187903644027291846">Effacer</a></span></span></div><div class="comment-replies"><div id="c6187903644027291846-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c6187903644027291846-ra" class="thread-chrome thread-expanded"><div></div><div id="c6187903644027291846-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="6187903644027291846">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c6187903644027291846-ce"></div></li><li class="comment" id="c8983330105877937586"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">ALX</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="et-la-thailande-alors.html%3FshowComment=1333331045871.html#c8983330105877937586">1 avril 2012 à 21 h 44</a></span></div><p class="comment-content">Je viens de commencer à lire votre blogue et ça me rappel mon voyage en Thailande l&#39;année passée...<br>http://latrouilledansmesvalises.blogspot.ca/<br>Dans un mois nous retournons dans le coin en Indonésie cette fois-ci!</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="8983330105877937586">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/8983330105877937586">Effacer</a></span></span></div><div class="comment-replies"><div id="c8983330105877937586-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c8983330105877937586-ra" class="thread-chrome thread-expanded"><div></div><div id="c8983330105877937586-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="8983330105877937586">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c8983330105877937586-ce"></div></li><li class="comment" id="c8187911792076611144"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">André Malenfant</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="et-la-thailande-alors.html%3FshowComment=1333338263215.html#c8187911792076611144">1 avril 2012 à 23 h 44</a></span></div><p class="comment-content">Merci pour le lien, on regarde ça à l&#39;instant! Tiens-nous au courant, l&#39;Indonésie est dans Le Plan (celui qui change tout le temps)! On sait jamais!</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="8187911792076611144">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/8187911792076611144">Effacer</a></span></span></div><div class="comment-replies"><div id="c8187911792076611144-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c8187911792076611144-ra" class="thread-chrome thread-expanded"><div></div><div id="c8187911792076611144-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="8187911792076611144">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c8187911792076611144-ce"></div></li><li class="comment" id="c293969229501533004"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">pépé mémé</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="et-la-thailande-alors.html%3FshowComment=1334099295530.html#c293969229501533004">10 avril 2012 à 19 h 08</a></span></div><p class="comment-content">J&#39;ai bien ri avec le stand à patate mais le Terminal 2 ça c&#39;est SUPER, en tout cas pour moi<br>tu me comprend  j&#39; en suis certaine. Continuer à profiter de toutes ces belles et bonnes<br>choses qui donnent envies à n&#39;importe qui , aussi Merci de voyager avec vous par le<br>billet de si belles photos<br>    <br>                                            Mémé Pépé</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="293969229501533004">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/293969229501533004">Effacer</a></span></span></div><div class="comment-replies"><div id="c293969229501533004-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c293969229501533004-ra" class="thread-chrome thread-expanded"><div></div><div id="c293969229501533004-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="293969229501533004">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c293969229501533004-ce"></div></li><li class="comment" id="c4871758485699313148"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Marie-Claude</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="et-la-thailande-alors.html%3FshowComment=1334218997632.html#c4871758485699313148">12 avril 2012 à 04 h 23</a></span></div><p class="comment-content">Yeah! Un commentaire des mes grands parents sur mon blog, wow! Merci beaucoup :) Et en passant, je suis aussi allée faire un tour dans un des plus grands marché à ciel ouvert au monde. Le Chatuchak Market de Bangkok! À suivre...</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="4871758485699313148">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/4871758485699313148">Effacer</a></span></span></div><div class="comment-replies"><div id="c4871758485699313148-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c4871758485699313148-ra" class="thread-chrome thread-expanded"><div></div><div id="c4871758485699313148-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="4871758485699313148">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c4871758485699313148-ce"></div></li></ol><div id="top-continue" class="continue"><a class="comment-reply" target="_self">Ajouter un commentaire</a></div><div class="comment-replybox-thread" id="top-ce"></div><div class="loadmore hidden" data-post-id="2441485106000184770"><a target="_self">Charger la suite...</a></div></div>
+</div>
+</div>
+<p class='comment-footer'>
+<div class='comment-form'>
+<a name='comment-form'></a>
+<p>
+</p>
+<a href='https://www.blogger.com/comment/frame/2960778330733091697?po=2441485106000184770&hl=fr-CA&saa=85391&origin=http://www.lafuiteautourdumonde.com' id='comment-editor-src'></a>
+<iframe allowtransparency='true' class='blogger-iframe-colorize blogger-comment-from-post' frameborder='0' height='410px' id='comment-editor' name='comment-editor' src='et-la-thailande-alors.html' width='100%'></iframe>
+<script src='https://www.blogger.com/static/v1/jsbin/1167892209-comment_from_post_iframe.js' type='text/javascript'></script>
+<script type='text/javascript'>
+      BLOG_CMT_createIframe('https://www.blogger.com/rpc_relay.html');
+    </script>
+</div>
+</p>
 <div id='backlinks-container'>
 <div id='Blog1_backlinks-container'>
 </div>

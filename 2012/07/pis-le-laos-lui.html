@@ -1208,6 +1208,210 @@ sur le mekong, vers Champasak</td></tr>
 </ItemPage>
 </div>
 <div id='disqus_thread' style='margin-top: 20px;'></div>
+<div class='comments' id='comments'>
+<a name='comments'></a>
+<h4>8&#160;commentaires:</h4>
+<div class='comments-content'>
+<script async='async' src='pis-le-laos-lui.html' type='text/javascript'></script>
+<script type='text/javascript'>
+    (function() {
+      var items = null;
+      var msgs = null;
+      var config = {};
+
+// <![CDATA[
+      var cursor = null;
+      if (items && items.length > 0) {
+        cursor = parseInt(items[items.length - 1].timestamp) + 1;
+      }
+
+      var bodyFromEntry = function(entry) {
+        var text = (entry &&
+                    ((entry.content && entry.content.$t) ||
+                     (entry.summary && entry.summary.$t))) ||
+            '';
+        if (entry && entry.gd$extendedProperty) {
+          for (var k in entry.gd$extendedProperty) {
+            if (entry.gd$extendedProperty[k].name == 'blogger.contentRemoved') {
+              return '<span class="deleted-comment">' + text + '</span>';
+            }
+          }
+        }
+        return text;
+      }
+
+      var parse = function(data) {
+        cursor = null;
+        var comments = [];
+        if (data && data.feed && data.feed.entry) {
+          for (var i = 0, entry; entry = data.feed.entry[i]; i++) {
+            var comment = {};
+            // comment ID, parsed out of the original id format
+            var id = /blog-(\d+).post-(\d+)/.exec(entry.id.$t);
+            comment.id = id ? id[2] : null;
+            comment.body = bodyFromEntry(entry);
+            comment.timestamp = Date.parse(entry.published.$t) + '';
+            if (entry.author && entry.author.constructor === Array) {
+              var auth = entry.author[0];
+              if (auth) {
+                comment.author = {
+                  name: (auth.name ? auth.name.$t : undefined),
+                  profileUrl: (auth.uri ? auth.uri.$t : undefined),
+                  avatarUrl: (auth.gd$image ? auth.gd$image.src : undefined)
+                };
+              }
+            }
+            if (entry.link) {
+              if (entry.link[2]) {
+                comment.link = comment.permalink = entry.link[2].href;
+              }
+              if (entry.link[3]) {
+                var pid = /.*comments\/default\/(\d+)\?.*/.exec(entry.link[3].href);
+                if (pid && pid[1]) {
+                  comment.parentId = pid[1];
+                }
+              }
+            }
+            comment.deleteclass = 'item-control blog-admin';
+            if (entry.gd$extendedProperty) {
+              for (var k in entry.gd$extendedProperty) {
+                if (entry.gd$extendedProperty[k].name == 'blogger.itemClass') {
+                  comment.deleteclass += ' ' + entry.gd$extendedProperty[k].value;
+                } else if (entry.gd$extendedProperty[k].name == 'blogger.displayTime') {
+                  comment.displayTime = entry.gd$extendedProperty[k].value;
+                }
+              }
+            }
+            comments.push(comment);
+          }
+        }
+        return comments;
+      };
+
+      var paginator = function(callback) {
+        if (hasMore()) {
+          var url = config.feed + '?alt=json&v=2&orderby=published&reverse=false&max-results=50';
+          if (cursor) {
+            url += '&published-min=' + new Date(cursor).toISOString();
+          }
+          window.bloggercomments = function(data) {
+            var parsed = parse(data);
+            cursor = parsed.length < 50 ? null
+                : parseInt(parsed[parsed.length - 1].timestamp) + 1
+            callback(parsed);
+            window.bloggercomments = null;
+          }
+          url += '&callback=bloggercomments';
+          var script = document.createElement('script');
+          script.type = 'text/javascript';
+          script.src = url;
+          document.getElementsByTagName('head')[0].appendChild(script);
+        }
+      };
+      var hasMore = function() {
+        return !!cursor;
+      };
+      var getMeta = function(key, comment) {
+        if ('iswriter' == key) {
+          var matches = !!comment.author
+              && comment.author.name == config.authorName
+              && comment.author.profileUrl == config.authorUrl;
+          return matches ? 'true' : '';
+        } else if ('deletelink' == key) {
+          return config.baseUri + '/comment/delete/'
+               + config.blogId + '/' + comment.id;
+        } else if ('deleteclass' == key) {
+          return comment.deleteclass;
+        }
+        return '';
+      };
+
+      var replybox = null;
+      var replyUrlParts = null;
+      var replyParent = undefined;
+
+      var onReply = function(commentId, domId) {
+        if (replybox == null) {
+          // lazily cache replybox, and adjust to suit this style:
+          replybox = document.getElementById('comment-editor');
+          if (replybox != null) {
+            replybox.height = '250px';
+            replybox.style.display = 'block';
+            replyUrlParts = replybox.src.split('#');
+          }
+        }
+        if (replybox && (commentId !== replyParent)) {
+          replybox.src = '';
+          document.getElementById(domId).insertBefore(replybox, null);
+          replybox.src = replyUrlParts[0]
+              + (commentId ? '&parentID=' + commentId : '')
+              + '#' + replyUrlParts[1];
+          replyParent = commentId;
+        }
+      };
+
+      var hash = (window.location.hash || '#').substring(1);
+      var startThread, targetComment;
+      if (/^comment-form_/.test(hash)) {
+        startThread = hash.substring('comment-form_'.length);
+      } else if (/^c[0-9]+$/.test(hash)) {
+        targetComment = hash.substring(1);
+      }
+
+      // Configure commenting API:
+      var configJso = {
+        'maxDepth': config.maxThreadDepth
+      };
+      var provider = {
+        'id': config.postId,
+        'data': items,
+        'loadNext': paginator,
+        'hasMore': hasMore,
+        'getMeta': getMeta,
+        'onReply': onReply,
+        'rendered': true,
+        'initComment': targetComment,
+        'initReplyThread': startThread,
+        'config': configJso,
+        'messages': msgs
+      };
+
+      var render = function() {
+        if (window.goog && window.goog.comments) {
+          var holder = document.getElementById('comment-holder');
+          window.goog.comments.render(holder, provider);
+        }
+      };
+
+      // render now, or queue to render when library loads:
+      if (window.goog && window.goog.comments) {
+        render();
+      } else {
+        window.goog = window.goog || {};
+        window.goog.comments = window.goog.comments || {};
+        window.goog.comments.loadQueue = window.goog.comments.loadQueue || [];
+        window.goog.comments.loadQueue.push(render);
+      }
+    })();
+// ]]>
+  </script>
+<div id='comment-holder'>
+<div class="comment-thread toplevel-thread"><ol id="top-ra"><li class="comment" id="c5785318090363084730"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Robert Vézina</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="pis-le-laos-lui.html%3FshowComment=1341832071098.html#c5785318090363084730">9 juillet 2012 à 07 h 07</a></span></div><p class="comment-content">Merci André, très belle description, c&#39;est super intéressant!<br>Tellement vrai! Les occidentaux triment comme des fous pour arriver à la retraite et essayer d&#39;être des personnes libres et heureuses alors que la vie est tellement simple quand on reste au niveau du cœur, du vivre et laisser vivre!<br>A+</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="5785318090363084730">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/5785318090363084730">Effacer</a></span></span></div><div class="comment-replies"><div id="c5785318090363084730-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c5785318090363084730-ra" class="thread-chrome thread-expanded"><div></div><div id="c5785318090363084730-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="5785318090363084730">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c5785318090363084730-ce"></div></li><li class="comment" id="c2446155919959571327"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Tim Fisher</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="pis-le-laos-lui.html%3FshowComment=1342558151823.html#c2446155919959571327">17 juillet 2012 à 16 h 49</a></span></div><p class="comment-content">Je dois finalement dire bonjour. Moi puis Helene lit La fruite autour du monde chaque mois. C&#39;est vraiment bien écrit, particulièrement pour moi parce que mon français n&#39;est pas le meilleur.  Serieux, c&#39;est la seule site web français que je comprends presque 100%.  Quoi 9 avec nous: On es presque la dans notre decision de faire la meme chose que vs à partir de la mois de Janvier.  PS: J&#39;ai la même camera que Andreé.</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="2446155919959571327">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/2446155919959571327">Effacer</a></span></span></div><div class="comment-replies"><div id="c2446155919959571327-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c2446155919959571327-ra" class="thread-chrome thread-expanded"><div></div><div id="c2446155919959571327-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="2446155919959571327">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c2446155919959571327-ce"></div></li><li class="comment" id="c6030902547800196572"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">André Malenfant</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="pis-le-laos-lui.html%3FshowComment=1342585153163.html#c6030902547800196572">18 juillet 2012 à 00 h 19</a></span></div><p class="comment-content">Salut Tim et Helene! Merci pour ton commentaire, ça fait plaisir de voir qu&#39;on rejoint de plus en plus de lecteurs. Je suis heureux aussi que tu puisses comprendre notre français, le tien n&#39;est pas mal non plus!<br><br>Je ne peux qu&#39;encourager votre décision de partir découvrir le monde, c&#39;est une expérience fabuleuse! Si vous avez des questions n&#39;hésitez pas!<br><br>P.S. C&#39;est une caméra parfaite pour le voyage ;)</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="6030902547800196572">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/6030902547800196572">Effacer</a></span></span></div><div class="comment-replies"><div id="c6030902547800196572-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c6030902547800196572-ra" class="thread-chrome thread-expanded"><div></div><div id="c6030902547800196572-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="6030902547800196572">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c6030902547800196572-ce"></div></li><li class="comment" id="c8166266817234284634"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">André Malenfant</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="pis-le-laos-lui.html%3FshowComment=1342585397330.html#c8166266817234284634">18 juillet 2012 à 00 h 23</a></span></div><p class="comment-content">Merci Robert! C&#39;est pour ça qu&#39;on a décidé de prendre une jeune retraite ;)</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="8166266817234284634">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/8166266817234284634">Effacer</a></span></span></div><div class="comment-replies"><div id="c8166266817234284634-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c8166266817234284634-ra" class="thread-chrome thread-expanded"><div></div><div id="c8166266817234284634-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="8166266817234284634">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c8166266817234284634-ce"></div></li><li class="comment" id="c1126330140147116911"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">André Malenfant</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="pis-le-laos-lui.html%3FshowComment=1342704937664.html#c1126330140147116911">19 juillet 2012 à 09 h 35</a></span></div><p class="comment-content">Hey Tim! Je viens juste de comprendre. C&#39;est vous qu&#39;on a rencontrés à Hampi? Tim et Hélène, ça me disais quelque chose mais je viens de faire le lien! Je suis content que vous nous lisiez... Avez-vous lu le post sur Hampi? (http://www.lafuiteautourdumonde.com/2012/01/cest-la-faute-de-hampi.html)<br><br>À bientôt!</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="1126330140147116911">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/1126330140147116911">Effacer</a></span></span></div><div class="comment-replies"><div id="c1126330140147116911-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c1126330140147116911-ra" class="thread-chrome thread-expanded"><div></div><div id="c1126330140147116911-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="1126330140147116911">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c1126330140147116911-ce"></div></li><li class="comment" id="c7863808119135359394"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Tim Fisher</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="pis-le-laos-lui.html%3FshowComment=1342711121517.html#c7863808119135359394">19 juillet 2012 à 11 h 18</a></span></div><p class="comment-content">Ouais, c&#39;est nous!  On a lu le post sur Hampi, et on a vu le &#39;shout-out&#39;.  C&#39;était trop drole.  On lit vos articles quand on est en route vers Montreal de Ottawa (où on démeure si tu ne rapelle pas). Je pratique mon voi de radio pour Helene qui conduit sa Yaris et traduit les mots que je ne comprends pas.</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="7863808119135359394">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/7863808119135359394">Effacer</a></span></span></div><div class="comment-replies"><div id="c7863808119135359394-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c7863808119135359394-ra" class="thread-chrome thread-expanded"><div></div><div id="c7863808119135359394-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="7863808119135359394">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c7863808119135359394-ce"></div></li><li class="comment" id="c236765301118489871"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">André Malenfant</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="pis-le-laos-lui.html%3FshowComment=1342716551315.html#c236765301118489871">19 juillet 2012 à 12 h 49</a></span></div><p class="comment-content">Hehe, j&#39;imagine la scène dans la voiture! Cool! Merci encore de nous écrire, ça fait grand plaisir!</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="236765301118489871">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/236765301118489871">Effacer</a></span></span></div><div class="comment-replies"><div id="c236765301118489871-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c236765301118489871-ra" class="thread-chrome thread-expanded"><div></div><div id="c236765301118489871-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="236765301118489871">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c236765301118489871-ce"></div></li><li class="comment" id="c8717492317054648029"><div class="avatar-image-container"><img src="http://resources.blogblog.com/img/blank.gif" alt=""/></div><div class="comment-block"><div class="comment-header"><cite class="user">Anonyme</cite><span class="icon user "></span><span class="datetime secondary-text"><a rel="nofollow" href="pis-le-laos-lui.html%3FshowComment=1670377315115.html#c8717492317054648029">6 décembre 2022 à 20 h 41</a></span></div><p class="comment-content">Look for the small padlock icon proper next to any web site <a href="https://vkfkdhzkwlsh.com/online-casino/" rel="nofollow">온라인카지노</a> URL to seek out|to search out} out if they offer a safe connection. If the connection is safe, meaning your personal data shall be encrypted earlier than it leaves your PC, so  nobody has entry to  it. We want to make it clear that we&#39;re right here for anybody who is experiencing an addiction to playing.</p><span class="comment-actions secondary-text"><a class="comment-reply" target="_self" data-comment-id="8717492317054648029">Répondre</a><span class="item-control blog-admin blog-admin pid-2085347796"><a target="_self" href="https://www.blogger.com/comment/delete/2960778330733091697/8717492317054648029">Effacer</a></span></span></div><div class="comment-replies"><div id="c8717492317054648029-rt" class="comment-thread inline-thread hidden"><span class="thread-toggle thread-expanded"><span class="thread-arrow"></span><span class="thread-count"><a target="_self">Réponses</a></span></span><ol id="c8717492317054648029-ra" class="thread-chrome thread-expanded"><div></div><div id="c8717492317054648029-continue" class="continue"><a class="comment-reply" target="_self" data-comment-id="8717492317054648029">Répondre</a></div></ol></div></div><div class="comment-replybox-single" id="c8717492317054648029-ce"></div></li></ol><div id="top-continue" class="continue"><a class="comment-reply" target="_self">Ajouter un commentaire</a></div><div class="comment-replybox-thread" id="top-ce"></div><div class="loadmore hidden" data-post-id="5584301686214745350"><a target="_self">Charger la suite...</a></div></div>
+</div>
+</div>
+<p class='comment-footer'>
+<div class='comment-form'>
+<a name='comment-form'></a>
+<p>
+</p>
+<a href='https://www.blogger.com/comment/frame/2960778330733091697?po=5584301686214745350&hl=fr-CA&saa=85391&origin=http://www.lafuiteautourdumonde.com' id='comment-editor-src'></a>
+<iframe allowtransparency='true' class='blogger-iframe-colorize blogger-comment-from-post' frameborder='0' height='410px' id='comment-editor' name='comment-editor' src='pis-le-laos-lui.html' width='100%'></iframe>
+<script src='https://www.blogger.com/static/v1/jsbin/1167892209-comment_from_post_iframe.js' type='text/javascript'></script>
+<script type='text/javascript'>
+      BLOG_CMT_createIframe('https://www.blogger.com/rpc_relay.html');
+    </script>
+</div>
+</p>
 <div id='backlinks-container'>
 <div id='Blog1_backlinks-container'>
 </div>
